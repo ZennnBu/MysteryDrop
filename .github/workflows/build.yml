@@ -14,11 +14,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract MysteryDrop ZIP
+      - name: Extract ZIP
         run: |
-          unzip -o MysteryDrop_1.21.4.zip -d project
-          echo "Extracted files:"
-          find project -maxdepth 3 -type f
+          mkdir extracted
+          unzip -o MysteryDrop_1.21.4.zip -d extracted
+          find extracted -type f
+
+      - name: Find Gradle project
+        run: |
+          BUILD_FILE=$(find extracted -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -print -quit)
+
+          if [ -z "$BUILD_FILE" ]; then
+            echo "ERROR: Gradle build file not found inside ZIP"
+            exit 1
+          fi
+
+          BUILD_DIR=$(dirname "$BUILD_FILE")
+          echo "BUILD_DIR=$BUILD_DIR" >> "$GITHUB_ENV"
+          echo "Found Gradle project: $BUILD_DIR"
 
       - name: Setup Java 21
         uses: actions/setup-java@v4
@@ -31,12 +44,14 @@ jobs:
 
       - name: Build plugin
         run: |
-          cd project
+          cd "$BUILD_DIR"
           gradle build
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
           name: MysteryDrop-1.21.4
-          path: project/build/libs/*.jar
+          path: |
+            extracted/**/build/libs/*.jar
+            extracted/build/libs/*.jar
           if-no-files-found: error
