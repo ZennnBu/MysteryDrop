@@ -1,0 +1,42 @@
+
+name: MysteryDrop Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract MysteryDrop ZIP
+        run: |
+          unzip -o MysteryDrop_1.21.4.zip -d project
+          echo "Extracted files:"
+          find project -maxdepth 3 -type f
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build plugin
+        run: |
+          cd project
+          gradle build
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: MysteryDrop-1.21.4
+          path: project/build/libs/*.jar
+          if-no-files-found: error
